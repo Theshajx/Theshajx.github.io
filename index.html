@@ -88,6 +88,8 @@
             justify-content: center;
             margin: 0 auto;
             animation: pulse 2s infinite;
+            -webkit-tap-highlight-color: transparent; /* Removes tap highlight on iOS */
+            touch-action: manipulation; /* Improves touch handling */
         }
 
         .click-button:hover {
@@ -134,6 +136,7 @@
             font-size: 1.5rem;
             cursor: pointer;
             transition: transform 0.3s ease;
+            -webkit-tap-highlight-color: transparent; /* Removes tap highlight on iOS */
         }
 
         .settings:hover {
@@ -150,6 +153,7 @@
             font-size: 1.5rem;
             cursor: pointer;
             transition: all 0.3s ease;
+            -webkit-tap-highlight-color: transparent; /* Removes tap highlight on iOS */
         }
 
         .mode-toggle:hover {
@@ -171,6 +175,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 3px 10px rgba(106, 90, 205, 0.3);
+            -webkit-tap-highlight-color: transparent; /* Removes tap highlight on iOS */
         }
 
         .upgrade-button:hover {
@@ -286,11 +291,36 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize Telegram WebApp
-            const tg = window.Telegram.WebApp;
-            tg.expand();
-            tg.enableClosingConfirmation();
+        // Initialize game once DOM is loaded
+        document.addEventListener('DOMContentLoaded', initGame);
+        
+        // Backup initialization in case DOMContentLoaded doesn't fire correctly
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            setTimeout(initGame, 1);
+        }
+
+        function initGame() {
+            console.log("Game initializing...");
+            
+            // Prevent multiple initializations
+            if (window.gameInitialized) return;
+            window.gameInitialized = true;
+            
+            // Try to initialize Telegram WebApp
+            let tg;
+            try {
+                tg = window.Telegram.WebApp;
+                tg.expand();
+                tg.enableClosingConfirmation();
+                console.log("Telegram WebApp initialized");
+            } catch (e) {
+                console.error("Error initializing Telegram WebApp:", e);
+                tg = {
+                    showPopup: (opts, callback) => { alert(opts.message); if (callback) callback('ok'); },
+                    showAlert: (msg) => { alert(msg); },
+                    CloudStorage: null
+                };
+            }
 
             // Game variables
             let score = 0;
@@ -312,22 +342,42 @@
             const modeToggle = document.getElementById('modeToggle');
             const settingsButton = document.getElementById('settingsButton');
             
-            // Load saved data from Telegram Cloud Storage if available
+            console.log("DOM elements loaded:", !!clickButton);
+            
+            // Load saved data
             loadGameData();
             
             // Update UI
             updateUI();
             
             // Set up auto clickers
-            setInterval(function() {
+            const autoClickInterval = setInterval(function() {
                 if (autoClickers > 0) {
                     addScore(autoClickers);
                     updateUI();
                 }
             }, 1000);
 
-            // Event listeners
-            clickButton.addEventListener('click', function(e) {
+            // Event listeners - use both click and touchend for better iOS compatibility
+            function addClickEvent(element, handler) {
+                if (!element) return;
+                
+                // Remove any existing listeners to prevent duplicates
+                element.removeEventListener('click', handler);
+                element.removeEventListener('touchend', handler);
+                
+                // Add both event types
+                element.addEventListener('click', handler);
+                element.addEventListener('touchend', function(e) {
+                    e.preventDefault(); // Prevents double-firing with click
+                    handler(e);
+                });
+            }
+            
+            // Click button handler
+            function handleMainClick(e) {
+                console.log("Click detected!");
+                
                 // Add score
                 addScore(clickPower);
                 totalClicks++;
@@ -338,13 +388,33 @@
                 }
                 
                 // Add visual feedback
-                const clickButtonRect = clickButton.getBoundingClientRect();
-                const floatingText = document.createElement('div');
-                floatingText.classList.add('score-added');
-                floatingText.textContent = `+${clickPower}`;
-                floatingText.style.left = `${e.clientX - 15}px`;
-                floatingText.style.top = `${e.clientY - 15}px`;
-                document.body.appendChild(floatingText);
+                try {
+                    const clickButtonRect = clickButton.getBoundingClientRect();
+                    const floatingText = document.createElement('div');
+                    floatingText.classList.add('score-added');
+                    floatingText.textContent = `+${clickPower}`;
+                    
+                    // Use either touch or click coordinates
+                    const x = (e.touches && e.touches[0]) ? 
+                        e.touches[0].clientX : 
+                        (e.clientX || clickButtonRect.left + clickButtonRect.width/2);
+                    const y = (e.touches && e.touches[0]) ? 
+                        e.touches[0].clientY : 
+                        (e.clientY || clickButtonRect.top + clickButtonRect.height/2);
+                    
+                    floatingText.style.left = `${x - 15}px`;
+                    floatingText.style.top = `${y - 15}px`;
+                    document.body.appendChild(floatingText);
+                    
+                    // Clean up floating text after animation
+                    setTimeout(() => {
+                        if (document.body.contains(floatingText)) {
+                            document.body.removeChild(floatingText);
+                        }
+                    }, 1500);
+                } catch (err) {
+                    console.error("Error with visual feedback:", err);
+                }
                 
                 // Apply vibration animation
                 clickButton.classList.add('vibration');
@@ -352,22 +422,15 @@
                     clickButton.classList.remove('vibration');
                 }, 200);
                 
-                // Clean up floating text after animation
-                setTimeout(() => {
-                    document.body.removeChild(floatingText);
-                }, 1500);
-                
                 updateUI();
                 saveGameData();
-            });
+            }
 
-            upgradeClickButton.addEventListener('click', function() {
+            function handleUpgradeClick() {
                 if (score >= clickUpgradeCost) {
                     score -= clickUpgradeCost;
                     clickPower += 1;
                     clickUpgradeCost = Math.floor(clickUpgradeCost * 1.5);
-                    upgradeClickButton.setAttribute('data-cost', clickUpgradeCost);
-                    upgradeClickButton.textContent = `Upgrade Click (${clickUpgradeCost})`;
                     
                     updateUI();
                     saveGameData();
@@ -379,15 +442,13 @@
                         buttons: [{type: 'ok'}]
                     });
                 }
-            });
+            }
 
-            buyAutoClickerButton.addEventListener('click', function() {
+            function handleBuyAutoClicker() {
                 if (score >= autoClickerCost) {
                     score -= autoClickerCost;
                     autoClickers += 1;
                     autoClickerCost = Math.floor(autoClickerCost * 1.3);
-                    buyAutoClickerButton.setAttribute('data-cost', autoClickerCost);
-                    buyAutoClickerButton.textContent = `Buy Auto Clicker (${autoClickerCost})`;
                     
                     updateUI();
                     saveGameData();
@@ -399,9 +460,9 @@
                         buttons: [{type: 'ok'}]
                     });
                 }
-            });
+            }
 
-            modeToggle.addEventListener('click', function() {
+            function handleModeToggle() {
                 document.body.classList.toggle('light-mode');
                 
                 if (document.body.classList.contains('light-mode')) {
@@ -412,9 +473,9 @@
                 
                 // Save theme preference
                 saveGameData();
-            });
+            }
 
-            settingsButton.addEventListener('click', function() {
+            function handleSettings() {
                 tg.showPopup({
                     title: 'Settings',
                     message: 'What would you like to do?',
@@ -434,14 +495,23 @@
                         resetGame();
                     }
                 });
-            });
+            }
+            
+            // Add event listeners
+            if (clickButton) addClickEvent(clickButton, handleMainClick);
+            if (upgradeClickButton) addClickEvent(upgradeClickButton, handleUpgradeClick);
+            if (buyAutoClickerButton) addClickEvent(buyAutoClickerButton, handleBuyAutoClicker);
+            if (modeToggle) addClickEvent(modeToggle, handleModeToggle);
+            if (settingsButton) addClickEvent(settingsButton, handleSettings);
 
-            // Functions
+            // Utility functions
             function addScore(amount) {
                 score += amount;
             }
 
             function updateUI() {
+                if (!scoreDisplay) return; // Safety check
+                
                 scoreDisplay.textContent = formatNumber(score);
                 perSecondDisplay.textContent = `${autoClickers} per second`;
                 clickPowerDisplay.textContent = clickPower;
@@ -475,74 +545,85 @@
                     theme: document.body.classList.contains('light-mode') ? 'light' : 'dark'
                 };
                 
-                // If Telegram WebApp is available, use cloud storage
+                // Store as JSON string
+                const gameDataString = JSON.stringify(gameData);
+                
+                // Try Telegram WebApp CloudStorage first
                 if (tg.CloudStorage) {
-                    tg.CloudStorage.setItem('clickerGameData', JSON.stringify(gameData));
+                    try {
+                        tg.CloudStorage.setItem('clickerGameData', gameDataString);
+                    } catch (e) {
+                        console.error('Error saving to Telegram CloudStorage:', e);
+                        // Fallback to localStorage
+                        localStorage.setItem('clickerGameData', gameDataString);
+                    }
                 } else {
-                    // Fallback to localStorage
-                    localStorage.setItem('clickerGameData', JSON.stringify(gameData));
+                    // Use localStorage
+                    localStorage.setItem('clickerGameData', gameDataString);
                 }
             }
 
             function loadGameData() {
                 let gameData = null;
                 
-                // Try to get data from Telegram cloud storage
-                if (tg.CloudStorage) {
-                    tg.CloudStorage.getItem('clickerGameData', function(error, value) {
-                        if (!error && value) {
-                            try {
-                                gameData = JSON.parse(value);
-                                applyGameData(gameData);
-                            } catch (e) {
-                                console.error('Error parsing game data:', e);
-                            }
+                // Function to apply loaded data
+                function applyGameData(data) {
+                    if (data) {
+                        score = data.score || 0;
+                        clickPower = data.clickPower || 1;
+                        autoClickers = data.autoClickers || 0;
+                        totalClicks = data.totalClicks || 0;
+                        clickUpgradeCost = data.clickUpgradeCost || 50;
+                        autoClickerCost = data.autoClickerCost || 100;
+                        
+                        // Apply theme
+                        if (data.theme === 'light') {
+                            document.body.classList.add('light-mode');
+                            modeToggle.textContent = '☀️';
                         } else {
-                            // Try fallback to localStorage
-                            const localData = localStorage.getItem('clickerGameData');
-                            if (localData) {
-                                try {
-                                    gameData = JSON.parse(localData);
-                                    applyGameData(gameData);
-                                } catch (e) {
-                                    console.error('Error parsing local game data:', e);
-                                }
-                            }
+                            document.body.classList.remove('light-mode');
+                            modeToggle.textContent = '🌙';
                         }
-                    });
-                } else {
-                    // Use localStorage
-                    const localData = localStorage.getItem('clickerGameData');
-                    if (localData) {
-                        try {
-                            gameData = JSON.parse(localData);
-                            applyGameData(gameData);
-                        } catch (e) {
-                            console.error('Error parsing local game data:', e);
-                        }
+                        
+                        updateUI();
                     }
                 }
-            }
-
-            function applyGameData(data) {
-                if (data) {
-                    score = data.score || 0;
-                    clickPower = data.clickPower || 1;
-                    autoClickers = data.autoClickers || 0;
-                    totalClicks = data.totalClicks || 0;
-                    clickUpgradeCost = data.clickUpgradeCost || 50;
-                    autoClickerCost = data.autoClickerCost || 100;
-                    
-                    // Apply theme
-                    if (data.theme === 'light') {
-                        document.body.classList.add('light-mode');
-                        modeToggle.textContent = '☀️';
-                    } else {
-                        document.body.classList.remove('light-mode');
-                        modeToggle.textContent = '🌙';
+                
+                // Try to get data from Telegram cloud storage
+                if (tg.CloudStorage) {
+                    try {
+                        tg.CloudStorage.getItem('clickerGameData', function(error, value) {
+                            if (!error && value) {
+                                try {
+                                    gameData = JSON.parse(value);
+                                    applyGameData(gameData);
+                                } catch (e) {
+                                    console.error('Error parsing game data:', e);
+                                    tryLocalStorage();
+                                }
+                            } else {
+                                tryLocalStorage();
+                            }
+                        });
+                    } catch (e) {
+                        console.error('Error with Telegram CloudStorage:', e);
+                        tryLocalStorage();
                     }
-                    
-                    updateUI();
+                } else {
+                    tryLocalStorage();
+                }
+                
+                // Fallback to localStorage
+                function tryLocalStorage() {
+                    try {
+                        const localData = localStorage.getItem('clickerGameData');
+                        if (localData) {
+                            gameData = JSON.parse(localData);
+                            applyGameData(gameData);
+                        }
+                    } catch (e) {
+                        console.error('Error loading from localStorage:', e);
+                    }
                 }
             }
 
@@ -559,7 +640,26 @@
                 
                 tg.showAlert('Game has been reset!');
             }
-        });
+            
+            // For debugging - add a global debug function
+            window.debugClicker = {
+                addScore: function(amount) {
+                    score += amount || 1000;
+                    updateUI();
+                    saveGameData();
+                },
+                getState: function() {
+                    return {
+                        score,
+                        clickPower,
+                        autoClickers,
+                        totalClicks
+                    };
+                }
+            };
+            
+            console.log("Game initialization complete");
+        }
     </script>
 </body>
 </html>
