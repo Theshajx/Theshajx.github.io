@@ -1,19 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Telegram Clicker</title>
+    <title>Телеграм Кликер</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/telegram-web-app/6.7.0/telegram-web-app.js"></script>
     <style>
+        /* Theme Variables */
         :root {
-            --primary: #8774e1;
-            --secondary: #6a5acd;
-            --accent: #ff6b6b;
+            /* Default Theme (Discord Dark) */
+            --primary: #5865F2;
+            --secondary: #4752C4;
+            --accent: #EB459E;
             --text: #ffffff;
-            --background: #1a1a2e;
-            --card-bg: #16213e;
-            --button-hover: #7b68ee;
+            --background: #36393f;
+            --card-bg: #2f3136;
+            --button-hover: #4752C4;
+            --button-bg: #5865F2;
+            --success: #57F287;
+            --danger: #ED4245;
+            --warning: #FEE75C;
+            --header-bg: #202225;
+            --border-color: #42464D;
         }
 
         * {
@@ -21,19 +29,16 @@
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
+            box-sizing: border-box;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
             margin: 0;
             padding: 0;
             background-color: var(--background);
             color: var(--text);
             transition: all 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
             min-height: 100vh;
             text-align: center;
             touch-action: manipulation;
@@ -43,34 +48,49 @@
             width: 100%;
             max-width: 500px;
             padding: 20px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background-color: var(--header-bg);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            width: 100%;
         }
 
         .app-title {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
+            font-size: 1.8rem;
+            margin: 0;
             color: var(--primary);
-            text-shadow: 0 0 10px rgba(135, 116, 225, 0.5);
+            font-weight: 700;
         }
 
         .card {
             background-color: var(--card-bg);
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-            margin-bottom: 20px;
-            transition: transform 0.3s ease;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 16px;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s ease;
         }
 
         .score-container {
-            font-size: 1.8rem;
-            margin-bottom: 30px;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
         }
 
         .score {
-            font-size: 3rem;
+            font-size: 2.5rem;
             font-weight: bold;
             color: var(--accent);
-            text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+            text-shadow: 0 0 10px rgba(235, 69, 158, 0.3);
             display: block;
             margin: 10px 0;
         }
@@ -83,18 +103,18 @@
         }
 
         .click-button {
-            background-color: var(--primary);
+            background-color: var(--button-bg);
             color: var(--text);
             border: none;
             border-radius: 50%;
             width: 150px;
             height: 150px;
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             font-weight: bold;
             cursor: pointer;
             touch-action: manipulation;
             transition: all 0.2s ease;
-            box-shadow: 0 5px 15px rgba(135, 116, 225, 0.5);
+            box-shadow: 0 4px 0 var(--secondary);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -115,7 +135,9 @@
         .stats {
             display: flex;
             justify-content: space-around;
-            margin-top: 30px;
+            margin-top: 20px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 15px;
         }
 
         .stat-item {
@@ -125,14 +147,15 @@
         }
 
         .stat-value {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             font-weight: bold;
             color: var(--primary);
         }
 
         .stat-label {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             opacity: 0.8;
+            margin-top: 5px;
         }
 
         .icon-button {
@@ -141,83 +164,245 @@
             color: var(--text);
             font-size: 1.5rem;
             cursor: pointer;
-            position: absolute;
-            padding: 15px;
-            z-index: 5;
+            padding: 8px;
+            transition: transform 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .settings {
-            top: 5px;
-            right: 5px;
-            transition: transform 0.3s ease;
-        }
-
-        .settings:hover {
-            transform: rotate(45deg);
-        }
-
-        .mode-toggle {
-            top: 5px;
-            left: 5px;
-            transition: all 0.3s ease;
-        }
-
-        .mode-toggle:hover {
+        .icon-button:hover {
             transform: scale(1.1);
         }
 
         .upgrade-container {
-            margin-top: 30px;
+            margin-top: 20px;
+        }
+
+        .upgrade-section {
+            margin-bottom: 15px;
+        }
+
+        .upgrade-title {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            font-weight: 700;
         }
 
         .upgrade-button {
-            background-color: var(--secondary);
+            background-color: var(--button-bg);
             color: var(--text);
             border: none;
-            border-radius: 10px;
-            padding: 12px 20px;
-            margin: 10px;
-            font-size: 1rem;
+            border-radius: 4px;
+            padding: 10px 16px;
+            margin: 6px;
+            font-size: 0.9rem;
             cursor: pointer;
             touch-action: manipulation;
-            transition: all 0.3s ease;
-            box-shadow: 0 3px 10px rgba(106, 90, 205, 0.3);
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 0 var(--secondary);
+            display: inline-flex;
+            align-items: center;
         }
 
         .upgrade-button:hover {
             background-color: var(--button-hover);
-            transform: translateY(-3px);
+            transform: translateY(-2px);
         }
 
         .upgrade-button:disabled {
             background-color: #444;
             cursor: not-allowed;
-            opacity: 0.7;
+            opacity: 0.6;
             transform: none;
+            box-shadow: none;
+        }
+
+        .upgrade-button .emoji {
+            margin-right: 6px;
+            font-size: 1.1rem;
+        }
+
+        /* Settings Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .close-button {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: var(--text);
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .close-button:hover {
+            opacity: 1;
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        .settings-section {
+            margin-bottom: 25px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+
+        .settings-section:last-child {
+            border-bottom: none;
+        }
+
+        .settings-title {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .theme-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .theme-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .theme-option.active {
+            border-color: var(--text);
+            transform: scale(1.1);
+        }
+
+        .settings-button {
+            background-color: var(--button-bg);
+            color: var(--text);
+            border: none;
+            border-radius: 4px;
+            padding: 8px 16px;
+            margin: 8px 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .settings-button:hover {
+            background-color: var(--button-hover);
+        }
+
+        .settings-button.danger {
+            background-color: var(--danger);
+        }
+
+        .settings-button.success {
+            background-color: var(--success);
+        }
+
+        .settings-button.warning {
+            background-color: var(--warning);
+            color: #000;
+        }
+
+        .option-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+        }
+
+        /* Switch toggle */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .3s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
         }
 
         /* Animations */
         @keyframes pulse {
             0% {
-                box-shadow: 0 0 0 0 rgba(135, 116, 225, 0.7);
+                box-shadow: 0 0 0 0 rgba(88, 101, 242, 0.7);
             }
             70% {
-                box-shadow: 0 0 0 15px rgba(135, 116, 225, 0);
+                box-shadow: 0 0 0 10px rgba(88, 101, 242, 0);
             }
             100% {
-                box-shadow: 0 0 0 0 rgba(135, 116, 225, 0);
+                box-shadow: 0 0 0 0 rgba(88, 101, 242, 0);
             }
-        }
-
-        /* Light mode */
-        body.light-mode {
-            --primary: #6a5acd;
-            --secondary: #8774e1;
-            --accent: #ff6b6b;
-            --text: #333333;
-            --background: #f5f5f5;
-            --card-bg: #ffffff;
-            --button-hover: #5a4fcb;
         }
 
         .score-added {
@@ -251,6 +436,65 @@
             75% { transform: translateX(5px); }
         }
 
+        .bonus-notification {
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--accent);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 4px;
+            z-index: 50;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .bonus-notification.show {
+            opacity: 1;
+        }
+
+        /* Achievement notification */
+        .achievement {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100%);
+            background-color: var(--header-bg);
+            border: 1px solid var(--primary);
+            color: var(--text);
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 50;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 90%;
+            text-align: left;
+        }
+
+        .achievement.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .achievement-icon {
+            font-size: 2rem;
+        }
+
+        .achievement-text {
+            flex: 1;
+        }
+
+        .achievement-name {
+            color: var(--accent);
+            margin-bottom: 3px;
+        }
+
         /* Debug panel for mobile testing */
         #debugPanel {
             position: fixed;
@@ -265,27 +509,160 @@
             max-width: 200px;
             display: none;
         }
+
+        /* Discord Themes */
+        .discord-dark {
+            --primary: #5865F2;
+            --secondary: #4752C4;
+            --accent: #EB459E;
+            --text: #ffffff;
+            --background: #36393f;
+            --card-bg: #2f3136;
+            --button-hover: #4752C4;
+            --button-bg: #5865F2;
+            --header-bg: #202225;
+            --border-color: #42464D;
+        }
+
+        .discord-light {
+            --primary: #5865F2;
+            --secondary: #4752C4;
+            --accent: #EB459E;
+            --text: #2e3338;
+            --background: #ffffff;
+            --card-bg: #f2f3f5;
+            --button-hover: #4752C4;
+            --button-bg: #5865F2;
+            --header-bg: #e3e5e8;
+            --border-color: #d4d7dc;
+        }
+
+        .amoled-black {
+            --primary: #5865F2;
+            --secondary: #4752C4;
+            --accent: #EB459E;
+            --text: #ffffff;
+            --background: #000000;
+            --card-bg: #0a0a0a;
+            --button-hover: #4752C4;
+            --button-bg: #5865F2;
+            --header-bg: #000000;
+            --border-color: #1a1a1a;
+        }
+
+        .green-theme {
+            --primary: #43b581;
+            --secondary: #3aa374;
+            --accent: #43b581;
+            --text: #ffffff;
+            --background: #2C2F33;
+            --card-bg: #23272A;
+            --button-hover: #3aa374;
+            --button-bg: #43b581;
+            --header-bg: #1e2124;
+            --border-color: #42464D;
+        }
+
+        .blue-theme {
+            --primary: #00b0f4;
+            --secondary: #00a6e9;
+            --accent: #99aab5;
+            --text: #ffffff;
+            --background: #2C2F33;
+            --card-bg: #23272A;
+            --button-hover: #00a6e9;
+            --button-bg: #00b0f4;
+            --header-bg: #1e2124;
+            --border-color: #42464D;
+        }
+
+        .purple-theme {
+            --primary: #9b59b6;
+            --secondary: #8e44ad;
+            --accent: #e056fd;
+            --text: #ffffff;
+            --background: #2C2F33;
+            --card-bg: #23272A;
+            --button-hover: #8e44ad;
+            --button-bg: #9b59b6;
+            --header-bg: #1e2124;
+            --border-color: #42464D;
+        }
+
+        .red-theme {
+            --primary: #ED4245;
+            --secondary: #d83c3e;
+            --accent: #f04747;
+            --text: #ffffff;
+            --background: #2C2F33;
+            --card-bg: #23272A;
+            --button-hover: #d83c3e;
+            --button-bg: #ED4245;
+            --header-bg: #1e2124;
+            --border-color: #42464D;
+        }
+
+        /* Mobile optimization */
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+
+            .modal-content {
+                margin: 5% auto;
+                width: 95%;
+                max-height: 90vh;
+            }
+
+            .app-title {
+                font-size: 1.5rem;
+            }
+
+            .score {
+                font-size: 2.2rem;
+            }
+
+            .click-button {
+                width: 120px;
+                height: 120px;
+            }
+
+            .click-area {
+                width: 120px;
+                height: 120px;
+            }
+
+            .upgrade-button {
+                padding: 8px 12px;
+                margin: 4px;
+            }
+        }
     </style>
 </head>
-<body>
+<body class="discord-dark">
     <div id="debugPanel">Debug info will appear here</div>
 
-    <button class="icon-button mode-toggle" id="modeToggle">🌙</button>
-    <button class="icon-button settings" id="settingsButton">⚙️</button>
+    <div class="header">
+        <div class="left-buttons">
+            <button class="icon-button" id="settingsButton">⚙️</button>
+        </div>
+        <h1 class="app-title">Телеграм Кликер</h1>
+        <div class="right-buttons">
+            <button class="icon-button" id="achievementsButton">🏆</button>
+        </div>
+    </div>
 
     <div class="container">
-        <h1 class="app-title">Clicker Game</h1>
-        
         <div class="card">
             <div class="score-container">
-                <span>Your Score</span>
+                <span>Ваш Счёт</span>
                 <span class="score" id="score">0</span>
-                <span id="perSecond">0 per second</span>
+                <span id="perSecond">0 в секунду</span>
             </div>
             
             <div class="click-area">
                 <button class="click-button" id="clickButton">
-                    CLICK ME!
+                    НАЖМИ!
                 </button>
                 <div class="click-overlay" id="clickOverlay"></div>
             </div>
@@ -293,27 +670,114 @@
             <div class="stats">
                 <div class="stat-item">
                     <span class="stat-value" id="clickPower">1</span>
-                    <span class="stat-label">Per Click</span>
+                    <span class="stat-label">За Клик</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-value" id="totalClicks">0</span>
-                    <span class="stat-label">Total Clicks</span>
+                    <span class="stat-label">Всего Кликов</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-value" id="autoClickers">0</span>
-                    <span class="stat-label">Auto Clickers</span>
+                    <span class="stat-label">Авто-Кликеры</span>
                 </div>
             </div>
         </div>
         
         <div class="card upgrade-container">
-            <h2>Upgrades</h2>
-            <button class="upgrade-button" id="upgradeClick" data-cost="50">
-                Upgrade Click (50)
-            </button>
-            <button class="upgrade-button" id="buyAutoClicker" data-cost="100">
-                Buy Auto Clicker (100)
-            </button>
+            <div class="upgrade-section">
+                <h2 class="upgrade-title">Улучшения</h2>
+                <button class="upgrade-button" id="upgradeClick" data-cost="50">
+                    <span class="emoji">👆</span> Улучшить Клик (50)
+                </button>
+                <button class="upgrade-button" id="buyAutoClicker" data-cost="100">
+                    <span class="emoji">🤖</span> Купить Авто-Кликер (100)
+                </button>
+                <button class="upgrade-button" id="buyMultiplier" data-cost="500">
+                    <span class="emoji">✖️</span> Множитель x2 (500)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeSettings">&times;</span>
+            <h2 class="modal-title">Настройки</h2>
+            
+            <div class="settings-section">
+                <h3 class="settings-title">Темы</h3>
+                <div class="theme-options">
+                    <div class="theme-option active" style="background-color: #36393f;" data-theme="discord-dark" title="Discord темная"></div>
+                    <div class="theme-option" style="background-color: #ffffff;" data-theme="discord-light" title="Discord светлая"></div>
+                    <div class="theme-option" style="background-color: #000000;" data-theme="amoled-black" title="AMOLED Черная"></div>
+                    <div class="theme-option" style="background-color: #43b581;" data-theme="green-theme" title="Зеленая"></div>
+                    <div class="theme-option" style="background-color: #00b0f4;" data-theme="blue-theme" title="Синяя"></div>
+                    <div class="theme-option" style="background-color: #9b59b6;" data-theme="purple-theme" title="Фиолетовая"></div>
+                    <div class="theme-option" style="background-color: #ED4245;" data-theme="red-theme" title="Красная"></div>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h3 class="settings-title">Звуковые Эффекты</h3>
+                <div class="option-toggle">
+                    <span>Звук Клика</span>
+                    <label class="switch">
+                        <input type="checkbox" id="soundToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="option-toggle">
+                    <span>Звук Достижений</span>
+                    <label class="switch">
+                        <input type="checkbox" id="achievementSoundToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h3 class="settings-title">Визуальные Эффекты</h3>
+                <div class="option-toggle">
+                    <span>Анимация Частиц</span>
+                    <label class="switch">
+                        <input type="checkbox" id="particlesToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="option-toggle">
+                    <span>Большие Числа</span>
+                    <label class="switch">
+                        <input type="checkbox" id="largeNumbersToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h3 class="settings-title">Игровой Прогресс</h3>
+                <button class="settings-button danger" id="resetButton">Сбросить Игру</button>
+                <button class="settings-button success" id="exportButton">Экспорт Сохранения</button>
+                <button class="settings-button warning" id="importButton">Импорт Сохранения</button>
+            </div>
+            
+            <div class="settings-section">
+                <h3 class="settings-title">О Игре</h3>
+                <p>Телеграм Кликер v1.1.0</p>
+                <p>Разработано с ❤️</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bonus notification -->
+    <div class="bonus-notification" id="bonusNotification"></div>
+
+    <!-- Achievement notification -->
+    <div class="achievement" id="achievementNotification">
+        <div class="achievement-icon">🏆</div>
+        <div class="achievement-text">
+            <div class="achievement-name">Достижение!</div>
+            <div class="achievement-desc">Вы получили достижение</div>
         </div>
     </div>
 
@@ -348,8 +812,31 @@
                 totalClicks: 0,
                 clickUpgradeCost: 50,
                 autoClickerCost: 100,
-                isLight: false,
+                multiplierCost: 500,
+                multiplier: 1,
+                theme: 'discord-dark',
                 initialized: false,
+                settings: {
+                    soundEnabled: true,
+                    achievementSoundEnabled: true,
+                    particlesEnabled: true,
+                    largeNumbersEnabled: false
+                },
+                achievements: {
+                    firstClick: { earned: false, name: "Первый Клик", description: "Сделайте свой первый клик", icon: "👆" },
+                    tenClicks: { earned: false, name: "Начинающий Кликер", description: "Сделайте 10 кликов", icon: "🔟" },
+                    hundredClicks: { earned: false, name: "Опытный Кликер", description: "Сделайте 100 кликов", icon: "💯" },
+                    firstAutoClicker: { earned: false, name: "Автоматизация", description: "Купите свой первый авто-кликер", icon: "🤖" },
+                    firstUpgrade: { earned: false, name: "Улучшение", description: "Улучшите силу клика", icon: "⬆️" },
+                    thousandPoints: { earned: false, name: "Тысячник", description: "Наберите 1000 очков", icon: "🏆" },
+                    firstMultiplier: { earned: false, name: "Умножатель", description: "Купите свой первый множитель", icon: "✖️" }
+                },
+                bonuses: {
+                    active: false,
+                    timer: null,
+                    duration: 0,
+                    type: null
+                },
                 
                 // Storage helpers
                 save: function() {
@@ -361,7 +848,11 @@
                             totalClicks: this.totalClicks,
                             clickUpgradeCost: this.clickUpgradeCost,
                             autoClickerCost: this.autoClickerCost,
-                            isLight: this.isLight
+                            multiplierCost: this.multiplierCost,
+                            multiplier: this.multiplier,
+                            theme: this.theme,
+                            settings: this.settings,
+                            achievements: this.achievements
                         };
                         
                         localStorage.setItem('clickerGameData', JSON.stringify(data));
@@ -382,7 +873,26 @@
                             this.totalClicks = data.totalClicks || 0;
                             this.clickUpgradeCost = data.clickUpgradeCost || 50;
                             this.autoClickerCost = data.autoClickerCost || 100;
-                            this.isLight = data.isLight || false;
+                            this.multiplierCost = data.multiplierCost || 500;
+                            this.multiplier = data.multiplier || 1;
+                            this.theme = data.theme || 'discord-dark';
+                            this.settings = data.settings || {
+                                soundEnabled: true,
+                                achievementSoundEnabled: true,
+                                particlesEnabled: true,
+                                largeNumbersEnabled: false
+                            };
+                            this.achievements = data.achievements || this.achievements;
+                            
+                            // Apply saved theme
+                            this.applyTheme(this.theme);
+
+                            // Apply settings
+                            document.getElementById('soundToggle').checked = this.settings.soundEnabled;
+                            document.getElementById('achievementSoundToggle').checked = this.settings.achievementSoundEnabled;
+                            document.getElementById('particlesToggle').checked = this.settings.particlesEnabled;
+                            document.getElementById('largeNumbersToggle').checked = this.settings.largeNumbersEnabled;
+                            
                             debug('Game loaded');
                         }
                     } catch (e) {
@@ -397,32 +907,74 @@
                     this.totalClicks = 0;
                     this.clickUpgradeCost = 50;
                     this.autoClickerCost = 100;
+                    this.multiplierCost = 500;
+                    this.multiplier = 1;
+                    
+                    // Reset achievements
+                    Object.keys(this.achievements).forEach(key => {
+                        this.achievements[key].earned = false;
+                    });
+                    
                     this.save();
                     this.updateUI();
                     debug('Game reset');
-                    alert('Game has been reset!');
+                    this.showNotification('Статистика игры сброшена!');
+                },
+                
+                // Theme management
+                applyTheme: function(themeName) {
+                    document.body.className = themeName;
+                    this.theme = themeName;
+                    
+                    // Update theme selector
+                    const themeOptions = document.querySelectorAll('.theme-option');
+                    themeOptions.forEach(option => {
+                        option.classList.remove('active');
+                        if (option.dataset.theme === themeName) {
+                            option.classList.add('active');
+                        }
+                    });
+                    
+                    this.save();
                 },
                 
                 // Game mechanics
                 click: function(x, y) {
                     debug('Click registered');
-                    this.score += this.clickPower;
+                    
+                    // Calculate points to add
+                    const pointsToAdd = this.clickPower * this.multiplier;
+                    this.score += pointsToAdd;
                     this.totalClicks++;
                     
+                    // Check achievements
+                    this.checkClickAchievements();
+                    
                     // Visual feedback
-                    this.showFloatingScore(x, y);
+                    this.showFloatingScore(x, y, pointsToAdd);
                     this.applyClickAnimation();
+                    if (this.settings.particlesEnabled) {
+                        this.createParticles(x, y);
+                    }
+                    
+                    // Play sound if enabled
+                    if (this.settings.soundEnabled) {
+                        this.playSound('click');
+                    }
+                    
+                    // Check for random bonus
+                    this.checkRandomBonus();
                     
                     // Update and save
                     this.updateUI();
                     this.save();
                 },
                 
-                showFloatingScore: function(x, y) {
+                showFloatingScore: function(x, y, amount) {
                     try {
                         const text = document.createElement('div');
                         text.classList.add('score-added');
-                        text.textContent = `+${this.clickPower}`;
+                        text.textContent = `+${amount}`;
                         text.style.left = `${x - 15}px`;
                         text.style.top = `${y - 15}px`;
                         document.body.appendChild(text);
@@ -437,6 +989,56 @@
                     }
                 },
                 
+                createParticles: function(x, y) {
+                    const particleCount = 8;
+                    const colors = ['#EB459E', '#5865F2', '#57F287', '#FEE75C'];
+                    
+                    for (let i = 0; i < particleCount; i++) {
+                        const particle = document.createElement('div');
+                        particle.style.position = 'absolute';
+                        particle.style.width = '10px';
+                        particle.style.height = '10px';
+                        particle.style.borderRadius = '50%';
+                        particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                        particle.style.left = `${x}px`;
+                        particle.style.top = `${y}px`;
+                        particle.style.pointerEvents = 'none';
+                        particle.style.zIndex = '100';
+                        document.body.appendChild(particle);
+                        
+                        // Random direction
+                        const angle = Math.random() * Math.PI * 2;
+                        const velocity = 2 + Math.random() * 3;
+                        const xVel = Math.cos(angle) * velocity;
+                        const yVel = Math.sin(angle) * velocity;
+                        
+                        let opacity = 1;
+                        let size = 8 + Math.random() * 4;
+                        
+                        const animate = () => {
+                            size *= 0.96;
+                            opacity -= 0.05;
+                            particle.style.width = `${size}px`;
+                            particle.style.height = `${size}px`;
+                            particle.style.opacity = opacity;
+                            
+                            const currentLeft = parseFloat(particle.style.left);
+                            const currentTop = parseFloat(particle.style.top);
+                            
+                            particle.style.left = `${currentLeft + xVel}px`;
+                            particle.style.top = `${currentTop + yVel}px`;
+                            
+                            if (opacity > 0.1) {
+                                requestAnimationFrame(animate);
+                            } else {
+                                document.body.removeChild(particle);
+                            }
+                        };
+                        
+                        requestAnimationFrame(animate);
+                    }
+                },
+                
                 applyClickAnimation: function() {
                     const button = document.getElementById('clickButton');
                     if (button) {
@@ -447,22 +1049,32 @@
                     }
                 },
                 
+                playSound: function(type) {
+                    // We'll implement actual sound in a production environment
+                    // For now, just log it
+                    debug(`Playing ${type} sound`);
+                    // In a real implementation, we would create and play AudioContext sounds
+                },
+                
                 updateUI: function() {
                     try {
                         document.getElementById('score').textContent = this.formatNumber(this.score);
-                        document.getElementById('perSecond').textContent = `${this.autoClickers} per second`;
-                        document.getElementById('clickPower').textContent = this.clickPower;
+                        document.getElementById('perSecond').textContent = `${this.autoClickers} в секунду`;
+                        document.getElementById('clickPower').textContent = this.formatNumber(this.clickPower);
                         document.getElementById('totalClicks').textContent = this.formatNumber(this.totalClicks);
                         document.getElementById('autoClickers').textContent = this.autoClickers;
                         
                         const upgradeBtn = document.getElementById('upgradeClick');
                         const autoClickerBtn = document.getElementById('buyAutoClicker');
+                        const multiplierBtn = document.getElementById('buyMultiplier');
                         
                         upgradeBtn.disabled = this.score < this.clickUpgradeCost;
                         autoClickerBtn.disabled = this.score < this.autoClickerCost;
+                        multiplierBtn.disabled = this.score < this.multiplierCost;
                         
-                        upgradeBtn.textContent = `Upgrade Click (${this.formatNumber(this.clickUpgradeCost)})`;
-                        autoClickerBtn.textContent = `Buy Auto Clicker (${this.formatNumber(this.autoClickerCost)})`;
+                        upgradeBtn.textContent = `👆 Улучшить Клик (${this.formatNumber(this.clickUpgradeCost)})`;
+                        autoClickerBtn.textContent = `🤖 Купить Авто-Кликер (${this.formatNumber(this.autoClickerCost)})`;
+                        multiplierBtn.textContent = `✖️ Множитель x${this.multiplier * 2} (${this.formatNumber(this.multiplierCost)})`;
                         
                         debug('UI updated');
                     } catch (e) {
@@ -471,10 +1083,18 @@
                 },
                 
                 formatNumber: function(num) {
-                    if (num < 1000) return num;
-                    if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
-                    if (num < 1000000000) return (num / 1000000).toFixed(1) + 'M';
-                    return (num / 1000000000).toFixed(1) + 'B';
+                    if (!this.settings.largeNumbersEnabled) {
+                        if (num < 1000) return num;
+                        if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
+                        if (num < 1000000000) return (num / 1000000).toFixed(1) + 'M';
+                        return (num / 1000000000).toFixed(1) + 'B';
+                    } else {
+                        // Russian large number formatting
+                        if (num < 1000) return num;
+                        if (num < 1000000) return (num / 1000).toFixed(1) + ' тыс.';
+                        if (num < 1000000000) return (num / 1000000).toFixed(1) + ' млн.';
+                        return (num / 1000000000).toFixed(1) + ' млрд.';
+                    }
                 },
                 
                 upgradeClick: function() {
@@ -482,9 +1102,16 @@
                         this.score -= this.clickUpgradeCost;
                         this.clickPower += 1;
                         this.clickUpgradeCost = Math.floor(this.clickUpgradeCost * 1.5);
+                        
+                        // Check achievement
+                        if (!this.achievements.firstUpgrade.earned) {
+                            this.achievements.firstUpgrade.earned = true;
+                            this.showAchievement(this.achievements.firstUpgrade);
+                        }
+                        
                         this.updateUI();
                         this.save();
-                        alert('Click power upgraded to ' + this.clickPower);
+                        this.showNotification(`Сила клика улучшена до ${this.clickPower}!`);
                         debug('Click upgraded');
                     }
                 },
@@ -494,31 +1121,194 @@
                         this.score -= this.autoClickerCost;
                         this.autoClickers += 1;
                         this.autoClickerCost = Math.floor(this.autoClickerCost * 1.3);
+                        
+                        // Check achievement
+                        if (!this.achievements.firstAutoClicker.earned) {
+                            this.achievements.firstAutoClicker.earned = true;
+                            this.showAchievement(this.achievements.firstAutoClicker);
+                        }
+                        
                         this.updateUI();
                         this.save();
-                        alert('Auto clicker purchased! You now have ' + this.autoClickers);
+                        this.showNotification(`Авто-кликер куплен! У вас ${this.autoClickers}`);
                         debug('Auto clicker bought');
                     }
                 },
                 
-                toggleTheme: function() {
-                    this.isLight = !this.isLight;
-                    if (this.isLight) {
-                        document.body.classList.add('light-mode');
-                        document.getElementById('modeToggle').textContent = '☀️';
-                    } else {
-                        document.body.classList.remove('light-mode');
-                        document.getElementById('modeToggle').textContent = '🌙';
+                buyMultiplier: function() {
+                    if (this.score >= this.multiplierCost) {
+                        this.score -= this.multiplierCost;
+                        this.multiplier *= 2;
+                        this.multiplierCost = Math.floor(this.multiplierCost * 2);
+                        
+                        // Check achievement
+                        if (!this.achievements.firstMultiplier.earned) {
+                            this.achievements.firstMultiplier.earned = true;
+                            this.showAchievement(this.achievements.firstMultiplier);
+                        }
+                        
+                        this.updateUI();
+                        this.save();
+                        this.showNotification(`Множитель х${this.multiplier} активирован!`);
+                        debug('Multiplier bought');
                     }
+                },
+                
+                checkClickAchievements: function() {
+                    // First click achievement
+                    if (!this.achievements.firstClick.earned && this.totalClicks >= 1) {
+                        this.achievements.firstClick.earned = true;
+                        this.showAchievement(this.achievements.firstClick);
+                    }
+                    
+                    // Ten clicks achievement
+                    if (!this.achievements.tenClicks.earned && this.totalClicks >= 10) {
+                        this.achievements.tenClicks.earned = true;
+                        this.showAchievement(this.achievements.tenClicks);
+                    }
+                    
+                    // Hundred clicks achievement
+                    if (!this.achievements.hundredClicks.earned && this.totalClicks >= 100) {
+                        this.achievements.hundredClicks.earned = true;
+                        this.showAchievement(this.achievements.hundredClicks);
+                    }
+                    
+                    // 1000 points achievement
+                    if (!this.achievements.thousandPoints.earned && this.score >= 1000) {
+                        this.achievements.thousandPoints.earned = true;
+                        this.showAchievement(this.achievements.thousandPoints);
+                    }
+                },
+                
+                showAchievement: function(achievement) {
+                    const achievementElement = document.getElementById('achievementNotification');
+                    
+                    // Set content
+                    achievementElement.querySelector('.achievement-icon').textContent = achievement.icon;
+                    achievementElement.querySelector('.achievement-name').textContent = achievement.name;
+                    achievementElement.querySelector('.achievement-desc').textContent = achievement.description;
+                    
+                    // Play sound if enabled
+                    if (this.settings.achievementSoundEnabled) {
+                        this.playSound('achievement');
+                    }
+                    
+                    // Show animation
+                    achievementElement.classList.add('show');
+                    
+                    // Hide after 5 seconds
+                    setTimeout(() => {
+                        achievementElement.classList.remove('show');
+                    }, 5000);
+                    
                     this.save();
-                    debug('Theme toggled');
+                },
+                
+                showNotification: function(message) {
+                    const notification = document.getElementById('bonusNotification');
+                    notification.textContent = message;
+                    notification.classList.add('show');
+                    
+                    setTimeout(() => {
+                        notification.classList.remove('show');
+                    }, 3000);
+                },
+                
+                checkRandomBonus: function() {
+                    // 1% chance to trigger a random bonus
+                    if (!this.bonuses.active && Math.random() < 0.01) {
+                        this.activateRandomBonus();
+                    }
+                },
+                
+                activateRandomBonus: function() {
+                    const bonusTypes = [
+                        { type: 'doublePoints', duration: 30, message: 'Бонус! Двойные очки 30 секунд!' },
+                        { type: 'autoClickBoost', duration: 20, message: 'Бонус! Авто-кликеры ускорены 20 секунд!' },
+                        { type: 'instantPoints', duration: 0, message: 'Бонус! +500 очков мгновенно!' }
+                    ];
+                    
+                    const selectedBonus = bonusTypes[Math.floor(Math.random() * bonusTypes.length)];
+                    
+                    this.bonuses.active = true;
+                    this.bonuses.type = selectedBonus.type;
+                    this.bonuses.duration = selectedBonus.duration;
+                    
+                    this.showNotification(selectedBonus.message);
+                    
+                    if (selectedBonus.type === 'instantPoints') {
+                        this.score += 500;
+                        this.bonuses.active = false;
+                    } else {
+                        // Start bonus timer
+                        let timeLeft = selectedBonus.duration;
+                        this.bonuses.timer = setInterval(() => {
+                            timeLeft--;
+                            if (timeLeft <= 0) {
+                                clearInterval(this.bonuses.timer);
+                                this.bonuses.active = false;
+                                this.showNotification('Бонус закончился!');
+                            }
+                        }, 1000);
+                    }
+                    
+                    this.updateUI();
+                },
+                
+                // Export/Import game data
+                exportSave: function() {
+                    try {
+                        const saveData = localStorage.getItem('clickerGameData');
+                        if (saveData) {
+                            const encodedData = btoa(saveData);
+                            // Create a temporary textarea to copy to clipboard
+                            const textArea = document.createElement('textarea');
+                            textArea.value = encodedData;
+                            document.body.appendChild(textArea);
+                            textArea.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(textArea);
+                            
+                            this.showNotification('Код сохранения скопирован в буфер обмена!');
+                        }
+                    } catch (e) {
+                        debug('Export error: ' + e.message);
+                        this.showNotification('Ошибка при экспорте сохранения!');
+                    }
+                },
+                
+                importSave: function() {
+                    try {
+                        const importCode = prompt('Вставьте код сохранения:');
+                        if (importCode) {
+                            const decodedData = atob(importCode);
+                            localStorage.setItem('clickerGameData', decodedData);
+                            this.load();
+                            this.updateUI();
+                            this.showNotification('Сохранение успешно импортировано!');
+                        }
+                    } catch (e) {
+                        debug('Import error: ' + e.message);
+                        this.showNotification('Ошибка при импорте сохранения!');
+                    }
                 },
                 
                 // Setup functions
                 setupAutoClickers: function() {
                     setInterval(() => {
                         if (this.autoClickers > 0) {
-                            this.score += this.autoClickers;
+                            // Calculate points from auto clickers
+                            let pointsToAdd = this.autoClickers;
+                            
+                            // Apply bonus if active
+                            if (this.bonuses.active && this.bonuses.type === 'autoClickBoost') {
+                                pointsToAdd *= 3;
+                            } else if (this.bonuses.active && this.bonuses.type === 'doublePoints') {
+                                pointsToAdd *= 2;
+                            }
+                            
+                            this.score += pointsToAdd;
+                            this.checkClickAchievements();
                             this.updateUI();
                             this.save();
                         }
@@ -566,27 +1356,97 @@
                         });
                     }
                     
-                    // Theme toggle
-                    const modeToggle = document.getElementById('modeToggle');
-                    if (modeToggle) {
+                    // Multiplier button
+                    const multiplierBtn = document.getElementById('buyMultiplier');
+                    if (multiplierBtn) {
                         ['mousedown', 'touchstart'].forEach(eventType => {
-                            modeToggle.addEventListener(eventType, (e) => {
+                            multiplierBtn.addEventListener(eventType, (e) => {
                                 e.preventDefault();
-                                this.toggleTheme();
+                                this.buyMultiplier();
                             });
                         });
                     }
                     
                     // Settings button
                     const settingsBtn = document.getElementById('settingsButton');
-                    if (settingsBtn) {
-                        ['mousedown', 'touchstart'].forEach(eventType => {
-                            settingsBtn.addEventListener(eventType, (e) => {
-                                e.preventDefault();
-                                if (confirm('Do you want to reset the game?')) {
-                                    this.reset();
-                                }
+                    const settingsModal = document.getElementById('settingsModal');
+                    const closeSettings = document.getElementById('closeSettings');
+                    
+                    if (settingsBtn && settingsModal) {
+                        settingsBtn.addEventListener('click', () => {
+                            settingsModal.style.display = 'block';
+                        });
+                        
+                        closeSettings.addEventListener('click', () => {
+                            settingsModal.style.display = 'none';
+                        });
+                        
+                        // Close modal if clicked outside
+                        window.addEventListener('click', (e) => {
+                            if (e.target === settingsModal) {
+                                settingsModal.style.display = 'none';
+                            }
+                        });
+                    }
+                    
+                    // Theme options
+                    const themeOptions = document.querySelectorAll('.theme-option');
+                    themeOptions.forEach(option => {
+                        option.addEventListener('click', () => {
+                            this.applyTheme(option.dataset.theme);
+                        });
+                    });
+                    
+                    // Settings toggles
+                    document.getElementById('soundToggle').addEventListener('change', (e) => {
+                        this.settings.soundEnabled = e.target.checked;
+                        this.save();
+                    });
+                    
+                    document.getElementById('achievementSoundToggle').addEventListener('change', (e) => {
+                        this.settings.achievementSoundEnabled = e.target.checked;
+                        this.save();
+                    });
+                    
+                    document.getElementById('particlesToggle').addEventListener('change', (e) => {
+                        this.settings.particlesEnabled = e.target.checked;
+                        this.save();
+                    });
+                    
+                    document.getElementById('largeNumbersToggle').addEventListener('change', (e) => {
+                        this.settings.largeNumbersEnabled = e.target.checked;
+                        this.updateUI();
+                        this.save();
+                    });
+                    
+                    // Reset button
+                    document.getElementById('resetButton').addEventListener('click', () => {
+                        if (confirm('Вы уверены, что хотите сбросить всю игру?')) {
+                            this.reset();
+                            settingsModal.style.display = 'none';
+                        }
+                    });
+                    
+                    // Export button
+                    document.getElementById('exportButton').addEventListener('click', () => {
+                        this.exportSave();
+                    });
+                    
+                    // Import button
+                    document.getElementById('importButton').addEventListener('click', () => {
+                        this.importSave();
+                    });
+                    
+                    // Achievements button
+                    const achievementsBtn = document.getElementById('achievementsButton');
+                    if (achievementsBtn) {
+                        achievementsBtn.addEventListener('click', () => {
+                            let achievementsList = '';
+                            Object.values(this.achievements).forEach(achievement => {
+                                const status = achievement.earned ? '✅' : '❌';
+                                achievementsList += `${status} ${achievement.icon} ${achievement.name}: ${achievement.description}\n`;
                             });
+                            alert(`Достижения:\n\n${achievementsList}`);
                         });
                     }
                     
@@ -600,10 +1460,7 @@
                     this.load();
                     
                     // Apply theme from saved state
-                    if (this.isLight) {
-                        document.body.classList.add('light-mode');
-                        document.getElementById('modeToggle').textContent = '☀️';
-                    }
+                    this.applyTheme(this.theme);
                     
                     this.setupEventListeners();
                     this.setupAutoClickers();
@@ -623,7 +1480,8 @@
                                 score: this.score,
                                 clickPower: this.clickPower,
                                 autoClickers: this.autoClickers,
-                                totalClicks: this.totalClicks
+                                totalClicks: this.totalClicks,
+                                multiplier: this.multiplier
                             };
                         }
                     };
