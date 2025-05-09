@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Telegram Clicker</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/telegram-web-app/6.7.0/telegram-web-app.js"></script>
     <style>
@@ -16,8 +16,15 @@
             --button-hover: #7b68ee;
         }
 
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             margin: 0;
             padding: 0;
             background-color: var(--background);
@@ -29,6 +36,7 @@
             justify-content: center;
             min-height: 100vh;
             text-align: center;
+            touch-action: manipulation;
         }
 
         .container {
@@ -53,10 +61,6 @@
             transition: transform 0.3s ease;
         }
 
-        .card:hover {
-            transform: translateY(-5px);
-        }
-
         .score-container {
             font-size: 1.8rem;
             margin-bottom: 30px;
@@ -71,6 +75,13 @@
             margin: 10px 0;
         }
 
+        .click-area {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto;
+            position: relative;
+        }
+
         .click-button {
             background-color: var(--primary);
             color: var(--text);
@@ -81,26 +92,24 @@
             font-size: 1.5rem;
             font-weight: bold;
             cursor: pointer;
+            touch-action: manipulation;
             transition: all 0.2s ease;
             box-shadow: 0 5px 15px rgba(135, 116, 225, 0.5);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto;
             animation: pulse 2s infinite;
-            -webkit-tap-highlight-color: transparent; /* Removes tap highlight on iOS */
-            touch-action: manipulation; /* Improves touch handling */
+            z-index: 1;
         }
 
-        .click-button:hover {
-            background-color: var(--button-hover);
-            transform: scale(1.05);
-            box-shadow: 0 5px 20px rgba(135, 116, 225, 0.7);
-        }
-
-        .click-button:active {
-            transform: scale(0.95);
-            box-shadow: 0 2px 10px rgba(135, 116, 225, 0.3);
+        .click-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            cursor: pointer;
         }
 
         .stats {
@@ -126,17 +135,21 @@
             opacity: 0.8;
         }
 
-        .settings {
-            position: absolute;
-            top: 20px;
-            right: 20px;
+        .icon-button {
             background: none;
             border: none;
             color: var(--text);
             font-size: 1.5rem;
             cursor: pointer;
+            position: absolute;
+            padding: 15px;
+            z-index: 5;
+        }
+
+        .settings {
+            top: 5px;
+            right: 5px;
             transition: transform 0.3s ease;
-            -webkit-tap-highlight-color: transparent; /* Removes tap highlight on iOS */
         }
 
         .settings:hover {
@@ -144,16 +157,9 @@
         }
 
         .mode-toggle {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: none;
-            border: none;
-            color: var(--text);
-            font-size: 1.5rem;
-            cursor: pointer;
+            top: 5px;
+            left: 5px;
             transition: all 0.3s ease;
-            -webkit-tap-highlight-color: transparent; /* Removes tap highlight on iOS */
         }
 
         .mode-toggle:hover {
@@ -173,9 +179,9 @@
             margin: 10px;
             font-size: 1rem;
             cursor: pointer;
+            touch-action: manipulation;
             transition: all 0.3s ease;
             box-shadow: 0 3px 10px rgba(106, 90, 205, 0.3);
-            -webkit-tap-highlight-color: transparent; /* Removes tap highlight on iOS */
         }
 
         .upgrade-button:hover {
@@ -221,6 +227,7 @@
             pointer-events: none;
             animation: floatUp 1.5s ease-out forwards;
             opacity: 0;
+            z-index: 10;
         }
 
         @keyframes floatUp {
@@ -243,11 +250,28 @@
             25% { transform: translateX(-5px); }
             75% { transform: translateX(5px); }
         }
+
+        /* Debug panel for mobile testing */
+        #debugPanel {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 5px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 1000;
+            text-align: left;
+            max-width: 200px;
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <button class="mode-toggle" id="modeToggle">🌙</button>
-    <button class="settings" id="settingsButton">⚙️</button>
+    <div id="debugPanel">Debug info will appear here</div>
+
+    <button class="icon-button mode-toggle" id="modeToggle">🌙</button>
+    <button class="icon-button settings" id="settingsButton">⚙️</button>
 
     <div class="container">
         <h1 class="app-title">Clicker Game</h1>
@@ -259,9 +283,12 @@
                 <span id="perSecond">0 per second</span>
             </div>
             
-            <button class="click-button" id="clickButton">
-                CLICK ME!
-            </button>
+            <div class="click-area">
+                <button class="click-button" id="clickButton">
+                    CLICK ME!
+                </button>
+                <div class="click-overlay" id="clickOverlay"></div>
+            </div>
             
             <div class="stats">
                 <div class="stat-item">
@@ -291,375 +318,337 @@
     </div>
 
     <script>
-        // Initialize game once DOM is loaded
-        document.addEventListener('DOMContentLoaded', initGame);
-        
-        // Backup initialization in case DOMContentLoaded doesn't fire correctly
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            setTimeout(initGame, 1);
+        // Debug function for mobile testing
+        function debug(msg) {
+            const debugPanel = document.getElementById('debugPanel');
+            if (debugPanel) {
+                debugPanel.style.display = 'block';
+                debugPanel.innerHTML += msg + '<br>';
+                // Keep only the last 5 messages
+                const lines = debugPanel.innerHTML.split('<br>');
+                if (lines.length > 5) {
+                    debugPanel.innerHTML = lines.slice(lines.length - 5).join('<br>');
+                }
+            }
+            console.log(msg);
         }
 
-        function initGame() {
-            console.log("Game initializing...");
+        // Game initialization
+        debug('Script started');
+        
+        // Use a self-executing function to avoid global scope pollution
+        (function() {
+            debug('IIFE started');
             
-            // Prevent multiple initializations
-            if (window.gameInitialized) return;
-            window.gameInitialized = true;
-            
-            // Try to initialize Telegram WebApp
-            let tg;
-            try {
-                tg = window.Telegram.WebApp;
-                tg.expand();
-                tg.enableClosingConfirmation();
-                console.log("Telegram WebApp initialized");
-            } catch (e) {
-                console.error("Error initializing Telegram WebApp:", e);
-                tg = {
-                    showPopup: (opts, callback) => { alert(opts.message); if (callback) callback('ok'); },
-                    showAlert: (msg) => { alert(msg); },
-                    CloudStorage: null
-                };
-            }
-
-            // Game variables
-            let score = 0;
-            let clickPower = 1;
-            let autoClickers = 0;
-            let totalClicks = 0;
-            let clickUpgradeCost = 50;
-            let autoClickerCost = 100;
-            
-            // DOM elements
-            const scoreDisplay = document.getElementById('score');
-            const perSecondDisplay = document.getElementById('perSecond');
-            const clickPowerDisplay = document.getElementById('clickPower');
-            const totalClicksDisplay = document.getElementById('totalClicks');
-            const autoClickersDisplay = document.getElementById('autoClickers');
-            const clickButton = document.getElementById('clickButton');
-            const upgradeClickButton = document.getElementById('upgradeClick');
-            const buyAutoClickerButton = document.getElementById('buyAutoClicker');
-            const modeToggle = document.getElementById('modeToggle');
-            const settingsButton = document.getElementById('settingsButton');
-            
-            console.log("DOM elements loaded:", !!clickButton);
-            
-            // Load saved data
-            loadGameData();
-            
-            // Update UI
-            updateUI();
-            
-            // Set up auto clickers
-            const autoClickInterval = setInterval(function() {
-                if (autoClickers > 0) {
-                    addScore(autoClickers);
-                    updateUI();
-                }
-            }, 1000);
-
-            // Event listeners - use both click and touchend for better iOS compatibility
-            function addClickEvent(element, handler) {
-                if (!element) return;
+            // Game state
+            const game = {
+                score: 0,
+                clickPower: 1,
+                autoClickers: 0,
+                totalClicks: 0,
+                clickUpgradeCost: 50,
+                autoClickerCost: 100,
+                isLight: false,
+                initialized: false,
                 
-                // Remove any existing listeners to prevent duplicates
-                element.removeEventListener('click', handler);
-                element.removeEventListener('touchend', handler);
-                
-                // Add both event types
-                element.addEventListener('click', handler);
-                element.addEventListener('touchend', function(e) {
-                    e.preventDefault(); // Prevents double-firing with click
-                    handler(e);
-                });
-            }
-            
-            // Click button handler
-            function handleMainClick(e) {
-                console.log("Click detected!");
-                
-                // Add score
-                addScore(clickPower);
-                totalClicks++;
-                
-                // Vibrate on mobile devices
-                if (navigator.vibrate) {
-                    navigator.vibrate(15);
-                }
-                
-                // Add visual feedback
-                try {
-                    const clickButtonRect = clickButton.getBoundingClientRect();
-                    const floatingText = document.createElement('div');
-                    floatingText.classList.add('score-added');
-                    floatingText.textContent = `+${clickPower}`;
-                    
-                    // Use either touch or click coordinates
-                    const x = (e.touches && e.touches[0]) ? 
-                        e.touches[0].clientX : 
-                        (e.clientX || clickButtonRect.left + clickButtonRect.width/2);
-                    const y = (e.touches && e.touches[0]) ? 
-                        e.touches[0].clientY : 
-                        (e.clientY || clickButtonRect.top + clickButtonRect.height/2);
-                    
-                    floatingText.style.left = `${x - 15}px`;
-                    floatingText.style.top = `${y - 15}px`;
-                    document.body.appendChild(floatingText);
-                    
-                    // Clean up floating text after animation
-                    setTimeout(() => {
-                        if (document.body.contains(floatingText)) {
-                            document.body.removeChild(floatingText);
-                        }
-                    }, 1500);
-                } catch (err) {
-                    console.error("Error with visual feedback:", err);
-                }
-                
-                // Apply vibration animation
-                clickButton.classList.add('vibration');
-                setTimeout(() => {
-                    clickButton.classList.remove('vibration');
-                }, 200);
-                
-                updateUI();
-                saveGameData();
-            }
-
-            function handleUpgradeClick() {
-                if (score >= clickUpgradeCost) {
-                    score -= clickUpgradeCost;
-                    clickPower += 1;
-                    clickUpgradeCost = Math.floor(clickUpgradeCost * 1.5);
-                    
-                    updateUI();
-                    saveGameData();
-                    
-                    // Show notification
-                    tg.showPopup({
-                        title: 'Upgrade Purchased!',
-                        message: `Click power increased to ${clickPower}`,
-                        buttons: [{type: 'ok'}]
-                    });
-                }
-            }
-
-            function handleBuyAutoClicker() {
-                if (score >= autoClickerCost) {
-                    score -= autoClickerCost;
-                    autoClickers += 1;
-                    autoClickerCost = Math.floor(autoClickerCost * 1.3);
-                    
-                    updateUI();
-                    saveGameData();
-                    
-                    // Show notification
-                    tg.showPopup({
-                        title: 'Auto Clicker Purchased!',
-                        message: `You now have ${autoClickers} auto clickers`,
-                        buttons: [{type: 'ok'}]
-                    });
-                }
-            }
-
-            function handleModeToggle() {
-                document.body.classList.toggle('light-mode');
-                
-                if (document.body.classList.contains('light-mode')) {
-                    modeToggle.textContent = '☀️';
-                } else {
-                    modeToggle.textContent = '🌙';
-                }
-                
-                // Save theme preference
-                saveGameData();
-            }
-
-            function handleSettings() {
-                tg.showPopup({
-                    title: 'Settings',
-                    message: 'What would you like to do?',
-                    buttons: [
-                        {
-                            id: 'reset',
-                            type: 'destructive',
-                            text: 'Reset Game'
-                        },
-                        {
-                            id: 'cancel',
-                            type: 'cancel'
-                        }
-                    ]
-                }, function(buttonId) {
-                    if (buttonId === 'reset') {
-                        resetGame();
-                    }
-                });
-            }
-            
-            // Add event listeners
-            if (clickButton) addClickEvent(clickButton, handleMainClick);
-            if (upgradeClickButton) addClickEvent(upgradeClickButton, handleUpgradeClick);
-            if (buyAutoClickerButton) addClickEvent(buyAutoClickerButton, handleBuyAutoClicker);
-            if (modeToggle) addClickEvent(modeToggle, handleModeToggle);
-            if (settingsButton) addClickEvent(settingsButton, handleSettings);
-
-            // Utility functions
-            function addScore(amount) {
-                score += amount;
-            }
-
-            function updateUI() {
-                if (!scoreDisplay) return; // Safety check
-                
-                scoreDisplay.textContent = formatNumber(score);
-                perSecondDisplay.textContent = `${autoClickers} per second`;
-                clickPowerDisplay.textContent = clickPower;
-                totalClicksDisplay.textContent = formatNumber(totalClicks);
-                autoClickersDisplay.textContent = autoClickers;
-                
-                // Update buttons
-                upgradeClickButton.disabled = score < clickUpgradeCost;
-                buyAutoClickerButton.disabled = score < autoClickerCost;
-                
-                // Update button text
-                upgradeClickButton.textContent = `Upgrade Click (${formatNumber(clickUpgradeCost)})`;
-                buyAutoClickerButton.textContent = `Buy Auto Clicker (${formatNumber(autoClickerCost)})`;
-            }
-
-            function formatNumber(num) {
-                if (num < 1000) return num;
-                if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
-                if (num < 1000000000) return (num / 1000000).toFixed(1) + 'M';
-                return (num / 1000000000).toFixed(1) + 'B';
-            }
-
-            function saveGameData() {
-                const gameData = {
-                    score,
-                    clickPower,
-                    autoClickers,
-                    totalClicks,
-                    clickUpgradeCost,
-                    autoClickerCost,
-                    theme: document.body.classList.contains('light-mode') ? 'light' : 'dark'
-                };
-                
-                // Store as JSON string
-                const gameDataString = JSON.stringify(gameData);
-                
-                // Try Telegram WebApp CloudStorage first
-                if (tg.CloudStorage) {
+                // Storage helpers
+                save: function() {
                     try {
-                        tg.CloudStorage.setItem('clickerGameData', gameDataString);
-                    } catch (e) {
-                        console.error('Error saving to Telegram CloudStorage:', e);
-                        // Fallback to localStorage
-                        localStorage.setItem('clickerGameData', gameDataString);
-                    }
-                } else {
-                    // Use localStorage
-                    localStorage.setItem('clickerGameData', gameDataString);
-                }
-            }
-
-            function loadGameData() {
-                let gameData = null;
-                
-                // Function to apply loaded data
-                function applyGameData(data) {
-                    if (data) {
-                        score = data.score || 0;
-                        clickPower = data.clickPower || 1;
-                        autoClickers = data.autoClickers || 0;
-                        totalClicks = data.totalClicks || 0;
-                        clickUpgradeCost = data.clickUpgradeCost || 50;
-                        autoClickerCost = data.autoClickerCost || 100;
+                        const data = {
+                            score: this.score,
+                            clickPower: this.clickPower,
+                            autoClickers: this.autoClickers,
+                            totalClicks: this.totalClicks,
+                            clickUpgradeCost: this.clickUpgradeCost,
+                            autoClickerCost: this.autoClickerCost,
+                            isLight: this.isLight
+                        };
                         
-                        // Apply theme
-                        if (data.theme === 'light') {
-                            document.body.classList.add('light-mode');
-                            modeToggle.textContent = '☀️';
-                        } else {
-                            document.body.classList.remove('light-mode');
-                            modeToggle.textContent = '🌙';
-                        }
-                        
-                        updateUI();
-                    }
-                }
-                
-                // Try to get data from Telegram cloud storage
-                if (tg.CloudStorage) {
-                    try {
-                        tg.CloudStorage.getItem('clickerGameData', function(error, value) {
-                            if (!error && value) {
-                                try {
-                                    gameData = JSON.parse(value);
-                                    applyGameData(gameData);
-                                } catch (e) {
-                                    console.error('Error parsing game data:', e);
-                                    tryLocalStorage();
-                                }
-                            } else {
-                                tryLocalStorage();
-                            }
-                        });
+                        localStorage.setItem('clickerGameData', JSON.stringify(data));
+                        debug('Game saved');
                     } catch (e) {
-                        console.error('Error with Telegram CloudStorage:', e);
-                        tryLocalStorage();
+                        debug('Save error: ' + e.message);
                     }
-                } else {
-                    tryLocalStorage();
-                }
-                
-                // Fallback to localStorage
-                function tryLocalStorage() {
-                    try {
-                        const localData = localStorage.getItem('clickerGameData');
-                        if (localData) {
-                            gameData = JSON.parse(localData);
-                            applyGameData(gameData);
-                        }
-                    } catch (e) {
-                        console.error('Error loading from localStorage:', e);
-                    }
-                }
-            }
-
-            function resetGame() {
-                score = 0;
-                clickPower = 1;
-                autoClickers = 0;
-                totalClicks = 0;
-                clickUpgradeCost = 50;
-                autoClickerCost = 100;
-                
-                updateUI();
-                saveGameData();
-                
-                tg.showAlert('Game has been reset!');
-            }
-            
-            // For debugging - add a global debug function
-            window.debugClicker = {
-                addScore: function(amount) {
-                    score += amount || 1000;
-                    updateUI();
-                    saveGameData();
                 },
-                getState: function() {
-                    return {
-                        score,
-                        clickPower,
-                        autoClickers,
-                        totalClicks
+                
+                load: function() {
+                    try {
+                        const savedData = localStorage.getItem('clickerGameData');
+                        if (savedData) {
+                            const data = JSON.parse(savedData);
+                            this.score = data.score || 0;
+                            this.clickPower = data.clickPower || 1;
+                            this.autoClickers = data.autoClickers || 0;
+                            this.totalClicks = data.totalClicks || 0;
+                            this.clickUpgradeCost = data.clickUpgradeCost || 50;
+                            this.autoClickerCost = data.autoClickerCost || 100;
+                            this.isLight = data.isLight || false;
+                            debug('Game loaded');
+                        }
+                    } catch (e) {
+                        debug('Load error: ' + e.message);
+                    }
+                },
+                
+                reset: function() {
+                    this.score = 0;
+                    this.clickPower = 1;
+                    this.autoClickers = 0;
+                    this.totalClicks = 0;
+                    this.clickUpgradeCost = 50;
+                    this.autoClickerCost = 100;
+                    this.save();
+                    this.updateUI();
+                    debug('Game reset');
+                    alert('Game has been reset!');
+                },
+                
+                // Game mechanics
+                click: function(x, y) {
+                    debug('Click registered');
+                    this.score += this.clickPower;
+                    this.totalClicks++;
+                    
+                    // Visual feedback
+                    this.showFloatingScore(x, y);
+                    this.applyClickAnimation();
+                    
+                    // Update and save
+                    this.updateUI();
+                    this.save();
+                },
+                
+                showFloatingScore: function(x, y) {
+                    try {
+                        const text = document.createElement('div');
+                        text.classList.add('score-added');
+                        text.textContent = `+${this.clickPower}`;
+                        text.style.left = `${x - 15}px`;
+                        text.style.top = `${y - 15}px`;
+                        document.body.appendChild(text);
+                        
+                        setTimeout(() => {
+                            if (document.body.contains(text)) {
+                                document.body.removeChild(text);
+                            }
+                        }, 1500);
+                    } catch (e) {
+                        debug('Float error: ' + e.message);
+                    }
+                },
+                
+                applyClickAnimation: function() {
+                    const button = document.getElementById('clickButton');
+                    if (button) {
+                        button.classList.add('vibration');
+                        setTimeout(() => {
+                            button.classList.remove('vibration');
+                        }, 200);
+                    }
+                },
+                
+                updateUI: function() {
+                    try {
+                        document.getElementById('score').textContent = this.formatNumber(this.score);
+                        document.getElementById('perSecond').textContent = `${this.autoClickers} per second`;
+                        document.getElementById('clickPower').textContent = this.clickPower;
+                        document.getElementById('totalClicks').textContent = this.formatNumber(this.totalClicks);
+                        document.getElementById('autoClickers').textContent = this.autoClickers;
+                        
+                        const upgradeBtn = document.getElementById('upgradeClick');
+                        const autoClickerBtn = document.getElementById('buyAutoClicker');
+                        
+                        upgradeBtn.disabled = this.score < this.clickUpgradeCost;
+                        autoClickerBtn.disabled = this.score < this.autoClickerCost;
+                        
+                        upgradeBtn.textContent = `Upgrade Click (${this.formatNumber(this.clickUpgradeCost)})`;
+                        autoClickerBtn.textContent = `Buy Auto Clicker (${this.formatNumber(this.autoClickerCost)})`;
+                        
+                        debug('UI updated');
+                    } catch (e) {
+                        debug('UI error: ' + e.message);
+                    }
+                },
+                
+                formatNumber: function(num) {
+                    if (num < 1000) return num;
+                    if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
+                    if (num < 1000000000) return (num / 1000000).toFixed(1) + 'M';
+                    return (num / 1000000000).toFixed(1) + 'B';
+                },
+                
+                upgradeClick: function() {
+                    if (this.score >= this.clickUpgradeCost) {
+                        this.score -= this.clickUpgradeCost;
+                        this.clickPower += 1;
+                        this.clickUpgradeCost = Math.floor(this.clickUpgradeCost * 1.5);
+                        this.updateUI();
+                        this.save();
+                        alert('Click power upgraded to ' + this.clickPower);
+                        debug('Click upgraded');
+                    }
+                },
+                
+                buyAutoClicker: function() {
+                    if (this.score >= this.autoClickerCost) {
+                        this.score -= this.autoClickerCost;
+                        this.autoClickers += 1;
+                        this.autoClickerCost = Math.floor(this.autoClickerCost * 1.3);
+                        this.updateUI();
+                        this.save();
+                        alert('Auto clicker purchased! You now have ' + this.autoClickers);
+                        debug('Auto clicker bought');
+                    }
+                },
+                
+                toggleTheme: function() {
+                    this.isLight = !this.isLight;
+                    if (this.isLight) {
+                        document.body.classList.add('light-mode');
+                        document.getElementById('modeToggle').textContent = '☀️';
+                    } else {
+                        document.body.classList.remove('light-mode');
+                        document.getElementById('modeToggle').textContent = '🌙';
+                    }
+                    this.save();
+                    debug('Theme toggled');
+                },
+                
+                // Setup functions
+                setupAutoClickers: function() {
+                    setInterval(() => {
+                        if (this.autoClickers > 0) {
+                            this.score += this.autoClickers;
+                            this.updateUI();
+                            this.save();
+                        }
+                    }, 1000);
+                    debug('Auto clickers set up');
+                },
+                
+                setupEventListeners: function() {
+                    // Setup click overlay
+                    const overlay = document.getElementById('clickOverlay');
+                    if (overlay) {
+                        // Using multiple event types for maximum compatibility
+                        ['mousedown', 'touchstart'].forEach(eventType => {
+                            overlay.addEventListener(eventType, (e) => {
+                                e.preventDefault();
+                                const rect = overlay.getBoundingClientRect();
+                                const x = e.type === 'touchstart' ? 
+                                    e.touches[0].clientX : e.clientX;
+                                const y = e.type === 'touchstart' ? 
+                                    e.touches[0].clientY : e.clientY;
+                                this.click(x, y);
+                            });
+                        });
+                    }
+                    
+                    // Upgrade click button
+                    const upgradeBtn = document.getElementById('upgradeClick');
+                    if (upgradeBtn) {
+                        ['mousedown', 'touchstart'].forEach(eventType => {
+                            upgradeBtn.addEventListener(eventType, (e) => {
+                                e.preventDefault();
+                                this.upgradeClick();
+                            });
+                        });
+                    }
+                    
+                    // Auto clicker button
+                    const autoClickerBtn = document.getElementById('buyAutoClicker');
+                    if (autoClickerBtn) {
+                        ['mousedown', 'touchstart'].forEach(eventType => {
+                            autoClickerBtn.addEventListener(eventType, (e) => {
+                                e.preventDefault();
+                                this.buyAutoClicker();
+                            });
+                        });
+                    }
+                    
+                    // Theme toggle
+                    const modeToggle = document.getElementById('modeToggle');
+                    if (modeToggle) {
+                        ['mousedown', 'touchstart'].forEach(eventType => {
+                            modeToggle.addEventListener(eventType, (e) => {
+                                e.preventDefault();
+                                this.toggleTheme();
+                            });
+                        });
+                    }
+                    
+                    // Settings button
+                    const settingsBtn = document.getElementById('settingsButton');
+                    if (settingsBtn) {
+                        ['mousedown', 'touchstart'].forEach(eventType => {
+                            settingsBtn.addEventListener(eventType, (e) => {
+                                e.preventDefault();
+                                if (confirm('Do you want to reset the game?')) {
+                                    this.reset();
+                                }
+                            });
+                        });
+                    }
+                    
+                    debug('Event listeners set up');
+                },
+                
+                init: function() {
+                    if (this.initialized) return;
+                    
+                    debug('Initializing game');
+                    this.load();
+                    
+                    // Apply theme from saved state
+                    if (this.isLight) {
+                        document.body.classList.add('light-mode');
+                        document.getElementById('modeToggle').textContent = '☀️';
+                    }
+                    
+                    this.setupEventListeners();
+                    this.setupAutoClickers();
+                    this.updateUI();
+                    this.initialized = true;
+                    
+                    // Expose debug functions
+                    window.gameDebug = {
+                        addScore: (amount) => {
+                            this.score += amount || 1000;
+                            this.updateUI();
+                            this.save();
+                            debug('Added ' + (amount || 1000) + ' score');
+                        },
+                        getState: () => {
+                            return {
+                                score: this.score,
+                                clickPower: this.clickPower,
+                                autoClickers: this.autoClickers,
+                                totalClicks: this.totalClicks
+                            };
+                        }
                     };
+                    
+                    debug('Game initialized');
                 }
             };
             
-            console.log("Game initialization complete");
-        }
+            // Initialize the game when DOM is ready or immediately if already loaded
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    game.init();
+                });
+            } else {
+                game.init();
+            }
+            
+            // Backup initialization in case of any issues
+            setTimeout(() => {
+                if (!game.initialized) {
+                    debug('Backup initialization');
+                    game.init();
+                }
+            }, 500);
+        })();
     </script>
 </body>
 </html>
