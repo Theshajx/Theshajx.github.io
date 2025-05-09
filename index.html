@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Clicker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/telegram-web-app/6.7.0/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --primary: #8774e1;
+            --secondary: #6a5acd;
+            --accent: #ff6b6b;
+            --text: #ffffff;
+            --background: #1a1a2e;
+            --card-bg: #16213e;
+            --button-hover: #7b68ee;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background);
+            color: var(--text);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+        }
+
+        .app-title {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(135, 116, 225, 0.5);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .score-container {
+            font-size: 1.8rem;
+            margin-bottom: 30px;
+        }
+
+        .score {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+            display: block;
+            margin: 10px 0;
+        }
+
+        .click-button {
+            background-color: var(--primary);
+            color: var(--text);
+            border: none;
+            border-radius: 50%;
+            width: 150px;
+            height: 150px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 5px 15px rgba(135, 116, 225, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            animation: pulse 2s infinite;
+        }
+
+        .click-button:hover {
+            background-color: var(--button-hover);
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(135, 116, 225, 0.7);
+        }
+
+        .click-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 10px rgba(135, 116, 225, 0.3);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .settings {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .settings:hover {
+            transform: rotate(45deg);
+        }
+
+        .mode-toggle {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mode-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .upgrade-container {
+            margin-top: 30px;
+        }
+
+        .upgrade-button {
+            background-color: var(--secondary);
+            color: var(--text);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 20px;
+            margin: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(106, 90, 205, 0.3);
+        }
+
+        .upgrade-button:hover {
+            background-color: var(--button-hover);
+            transform: translateY(-3px);
+        }
+
+        .upgrade-button:disabled {
+            background-color: #444;
+            cursor: not-allowed;
+            opacity: 0.7;
+            transform: none;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(135, 116, 225, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 15px rgba(135, 116, 225, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(135, 116, 225, 0);
+            }
+        }
+
+        /* Light mode */
+        body.light-mode {
+            --primary: #6a5acd;
+            --secondary: #8774e1;
+            --accent: #ff6b6b;
+            --text: #333333;
+            --background: #f5f5f5;
+            --card-bg: #ffffff;
+            --button-hover: #5a4fcb;
+        }
+
+        .score-added {
+            position: absolute;
+            color: var(--accent);
+            font-weight: bold;
+            pointer-events: none;
+            animation: floatUp 1.5s ease-out forwards;
+            opacity: 0;
+        }
+
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-100px);
+            }
+        }
+
+        .vibration {
+            animation: shake 0.2s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body>
+    <button class="mode-toggle" id="modeToggle">🌙</button>
+    <button class="settings" id="settingsButton">⚙️</button>
+
+    <div class="container">
+        <h1 class="app-title">Clicker Game</h1>
+        
+        <div class="card">
+            <div class="score-container">
+                <span>Your Score</span>
+                <span class="score" id="score">0</span>
+                <span id="perSecond">0 per second</span>
+            </div>
+            
+            <button class="click-button" id="clickButton">
+                CLICK ME!
+            </button>
+            
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-value" id="clickPower">1</span>
+                    <span class="stat-label">Per Click</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="totalClicks">0</span>
+                    <span class="stat-label">Total Clicks</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="autoClickers">0</span>
+                    <span class="stat-label">Auto Clickers</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card upgrade-container">
+            <h2>Upgrades</h2>
+            <button class="upgrade-button" id="upgradeClick" data-cost="50">
+                Upgrade Click (50)
+            </button>
+            <button class="upgrade-button" id="buyAutoClicker" data-cost="100">
+                Buy Auto Clicker (100)
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Telegram WebApp
+            const tg = window.Telegram.WebApp;
+            tg.expand();
+            tg.enableClosingConfirmation();
+
+            // Game variables
+            let score = 0;
+            let clickPower = 1;
+            let autoClickers = 0;
+            let totalClicks = 0;
+            let clickUpgradeCost = 50;
+            let autoClickerCost = 100;
+            
+            // DOM elements
+            const scoreDisplay = document.getElementById('score');
+            const perSecondDisplay = document.getElementById('perSecond');
+            const clickPowerDisplay = document.getElementById('clickPower');
+            const totalClicksDisplay = document.getElementById('totalClicks');
+            const autoClickersDisplay = document.getElementById('autoClickers');
+            const clickButton = document.getElementById('clickButton');
+            const upgradeClickButton = document.getElementById('upgradeClick');
+            const buyAutoClickerButton = document.getElementById('buyAutoClicker');
+            const modeToggle = document.getElementById('modeToggle');
+            const settingsButton = document.getElementById('settingsButton');
+            
+            // Load saved data from Telegram Cloud Storage if available
+            loadGameData();
+            
+            // Update UI
+            updateUI();
+            
+            // Set up auto clickers
+            setInterval(function() {
+                if (autoClickers > 0) {
+                    addScore(autoClickers);
+                    updateUI();
+                }
+            }, 1000);
+
+            // Event listeners
+            clickButton.addEventListener('click', function(e) {
+                // Add score
+                addScore(clickPower);
+                totalClicks++;
+                
+                // Vibrate on mobile devices
+                if (navigator.vibrate) {
+                    navigator.vibrate(15);
+                }
+                
+                // Add visual feedback
+                const clickButtonRect = clickButton.getBoundingClientRect();
+                const floatingText = document.createElement('div');
+                floatingText.classList.add('score-added');
+                floatingText.textContent = `+${clickPower}`;
+                floatingText.style.left = `${e.clientX - 15}px`;
+                floatingText.style.top = `${e.clientY - 15}px`;
+                document.body.appendChild(floatingText);
+                
+                // Apply vibration animation
+                clickButton.classList.add('vibration');
+                setTimeout(() => {
+                    clickButton.classList.remove('vibration');
+                }, 200);
+                
+                // Clean up floating text after animation
+                setTimeout(() => {
+                    document.body.removeChild(floatingText);
+                }, 1500);
+                
+                updateUI();
+                saveGameData();
+            });
+
+            upgradeClickButton.addEventListener('click', function() {
+                if (score >= clickUpgradeCost) {
+                    score -= clickUpgradeCost;
+                    clickPower += 1;
+                    clickUpgradeCost = Math.floor(clickUpgradeCost * 1.5);
+                    upgradeClickButton.setAttribute('data-cost', clickUpgradeCost);
+                    upgradeClickButton.textContent = `Upgrade Click (${clickUpgradeCost})`;
+                    
+                    updateUI();
+                    saveGameData();
+                    
+                    // Show notification
+                    tg.showPopup({
+                        title: 'Upgrade Purchased!',
+                        message: `Click power increased to ${clickPower}`,
+                        buttons: [{type: 'ok'}]
+                    });
+                }
+            });
+
+            buyAutoClickerButton.addEventListener('click', function() {
+                if (score >= autoClickerCost) {
+                    score -= autoClickerCost;
+                    autoClickers += 1;
+                    autoClickerCost = Math.floor(autoClickerCost * 1.3);
+                    buyAutoClickerButton.setAttribute('data-cost', autoClickerCost);
+                    buyAutoClickerButton.textContent = `Buy Auto Clicker (${autoClickerCost})`;
+                    
+                    updateUI();
+                    saveGameData();
+                    
+                    // Show notification
+                    tg.showPopup({
+                        title: 'Auto Clicker Purchased!',
+                        message: `You now have ${autoClickers} auto clickers`,
+                        buttons: [{type: 'ok'}]
+                    });
+                }
+            });
+
+            modeToggle.addEventListener('click', function() {
+                document.body.classList.toggle('light-mode');
+                
+                if (document.body.classList.contains('light-mode')) {
+                    modeToggle.textContent = '☀️';
+                } else {
+                    modeToggle.textContent = '🌙';
+                }
+                
+                // Save theme preference
+                saveGameData();
+            });
+
+            settingsButton.addEventListener('click', function() {
+                tg.showPopup({
+                    title: 'Settings',
+                    message: 'What would you like to do?',
+                    buttons: [
+                        {
+                            id: 'reset',
+                            type: 'destructive',
+                            text: 'Reset Game'
+                        },
+                        {
+                            id: 'cancel',
+                            type: 'cancel'
+                        }
+                    ]
+                }, function(buttonId) {
+                    if (buttonId === 'reset') {
+                        resetGame();
+                    }
+                });
+            });
+
+            // Functions
+            function addScore(amount) {
+                score += amount;
+            }
+
+            function updateUI() {
+                scoreDisplay.textContent = formatNumber(score);
+                perSecondDisplay.textContent = `${autoClickers} per second`;
+                clickPowerDisplay.textContent = clickPower;
+                totalClicksDisplay.textContent = formatNumber(totalClicks);
+                autoClickersDisplay.textContent = autoClickers;
+                
+                // Update buttons
+                upgradeClickButton.disabled = score < clickUpgradeCost;
+                buyAutoClickerButton.disabled = score < autoClickerCost;
+                
+                // Update button text
+                upgradeClickButton.textContent = `Upgrade Click (${formatNumber(clickUpgradeCost)})`;
+                buyAutoClickerButton.textContent = `Buy Auto Clicker (${formatNumber(autoClickerCost)})`;
+            }
+
+            function formatNumber(num) {
+                if (num < 1000) return num;
+                if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
+                if (num < 1000000000) return (num / 1000000).toFixed(1) + 'M';
+                return (num / 1000000000).toFixed(1) + 'B';
+            }
+
+            function saveGameData() {
+                const gameData = {
+                    score,
+                    clickPower,
+                    autoClickers,
+                    totalClicks,
+                    clickUpgradeCost,
+                    autoClickerCost,
+                    theme: document.body.classList.contains('light-mode') ? 'light' : 'dark'
+                };
+                
+                // If Telegram WebApp is available, use cloud storage
+                if (tg.CloudStorage) {
+                    tg.CloudStorage.setItem('clickerGameData', JSON.stringify(gameData));
+                } else {
+                    // Fallback to localStorage
+                    localStorage.setItem('clickerGameData', JSON.stringify(gameData));
+                }
+            }
+
+            function loadGameData() {
+                let gameData = null;
+                
+                // Try to get data from Telegram cloud storage
+                if (tg.CloudStorage) {
+                    tg.CloudStorage.getItem('clickerGameData', function(error, value) {
+                        if (!error && value) {
+                            try {
+                                gameData = JSON.parse(value);
+                                applyGameData(gameData);
+                            } catch (e) {
+                                console.error('Error parsing game data:', e);
+                            }
+                        } else {
+                            // Try fallback to localStorage
+                            const localData = localStorage.getItem('clickerGameData');
+                            if (localData) {
+                                try {
+                                    gameData = JSON.parse(localData);
+                                    applyGameData(gameData);
+                                } catch (e) {
+                                    console.error('Error parsing local game data:', e);
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    // Use localStorage
+                    const localData = localStorage.getItem('clickerGameData');
+                    if (localData) {
+                        try {
+                            gameData = JSON.parse(localData);
+                            applyGameData(gameData);
+                        } catch (e) {
+                            console.error('Error parsing local game data:', e);
+                        }
+                    }
+                }
+            }
+
+            function applyGameData(data) {
+                if (data) {
+                    score = data.score || 0;
+                    clickPower = data.clickPower || 1;
+                    autoClickers = data.autoClickers || 0;
+                    totalClicks = data.totalClicks || 0;
+                    clickUpgradeCost = data.clickUpgradeCost || 50;
+                    autoClickerCost = data.autoClickerCost || 100;
+                    
+                    // Apply theme
+                    if (data.theme === 'light') {
+                        document.body.classList.add('light-mode');
+                        modeToggle.textContent = '☀️';
+                    } else {
+                        document.body.classList.remove('light-mode');
+                        modeToggle.textContent = '🌙';
+                    }
+                    
+                    updateUI();
+                }
+            }
+
+            function resetGame() {
+                score = 0;
+                clickPower = 1;
+                autoClickers = 0;
+                totalClicks = 0;
+                clickUpgradeCost = 50;
+                autoClickerCost = 100;
+                
+                updateUI();
+                saveGameData();
+                
+                tg.showAlert('Game has been reset!');
+            }
+        });
+    </script>
+</body>
+</html>
